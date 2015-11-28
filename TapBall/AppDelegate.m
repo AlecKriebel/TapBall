@@ -7,12 +7,47 @@
 //
 
 #import "AppDelegate.h"
+#import "GAI.h"
+#import "ALSdk.h"
 
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
     // Override point for customization after application launch.
+    
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    
+    if ([[NSUserDefaults standardUserDefaults] arrayForKey:@"scores"] == nil) {
+        
+        NSMutableArray* array = [[NSMutableArray alloc]initWithCapacity:5];
+        [userDefaults setObject:array forKey:@"scores"];
+        [userDefaults setBool:NO forKey:@"howToOpened"];
+        [userDefaults setInteger:0 forKey:@"daily"];
+        [userDefaults setInteger:0 forKey:@"totalScore"];
+        [userDefaults setInteger:0 forKey:@"adCount"];
+        [userDefaults setInteger:0 forKey:@"lastScore"];
+        [userDefaults setObject:[NSDate date] forKey:@"today"];
+        [[NSUserDefaults standardUserDefaults] synchronize];
+        
+    }
+    
+    // Optional: automatically send uncaught exceptions to Google Analytics.
+    [GAI sharedInstance].trackUncaughtExceptions = YES;
+    
+    // Optional: set Google Analytics dispatch interval to e.g. 20 seconds.
+    [GAI sharedInstance].dispatchInterval = 5;
+    
+    // Optional: set Logger to VERBOSE for debug information.
+    //[[[GAI sharedInstance] logger] setLogLevel:kGAILogLevelVerbose];
+    
+    // Initialize tracker. Replace with your tracking ID.
+    [[GAI sharedInstance] trackerWithTrackingId:@"UA-46212582-7"];
+    
+    [ALSdk initializeSdk];
+    
+    [[GameCenterManager sharedManager] setupManager];
+    
     return YES;
 }
 							
@@ -24,8 +59,9 @@
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
-    // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later. 
-    // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    [userDefaults setObject:[NSDate date] forKey:@"today"];
+    
 }
 
 - (void)applicationWillEnterForeground:(UIApplication *)application
@@ -35,7 +71,18 @@
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
-    // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+    
+    NSDateComponents *today = [[NSCalendar currentCalendar] components:NSEraCalendarUnit|NSYearCalendarUnit|NSMonthCalendarUnit|NSDayCalendarUnit fromDate:[NSDate date]];
+    
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    
+    NSDateComponents *otherDay = [[NSCalendar currentCalendar] components:NSEraCalendarUnit|NSYearCalendarUnit|NSMonthCalendarUnit|NSDayCalendarUnit fromDate:[userDefaults objectForKey:@"today"]];
+
+    if ([today day] != [otherDay day]) {
+        
+        [userDefaults setInteger:0 forKey:@"daily"];
+        [userDefaults setObject:[NSDate date] forKey:@"today"];
+    }
 }
 
 - (void)applicationWillTerminate:(UIApplication *)application
